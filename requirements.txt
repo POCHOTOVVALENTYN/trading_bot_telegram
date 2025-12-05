@@ -1,14 +1,35 @@
+# Telegram бот
 python-telegram-bot==20.5
 python-dotenv==1.0.0
+
+# HTTP запросы
 aiohttp==3.9.1
 requests==2.31.0
+
+# База данных
 sqlalchemy==2.0.23
 psycopg2-binary==2.9.9
+
+# Кэш
 redis==5.0.1
 
-# Для криптовалютных платежей
+# ========== КРИПТО ПЛАТЕЖИ ==========
+# TON
+
+# Или альтернативный вариант:
+tonsdk== 1.0.1
+
+# TRON
 tronpy==0.6.1
 
+# Web3 (для Ethereum и других EVM сетей)
 web3==6.11.0
 eth-keys==0.5.1
 eth-typing==3.5.0
+
+# Криптография
+cryptography==41.0.7
+
+# Асинхронность
+aiofiles==23.2.1
+asyncio-contextmanager==1.0.1

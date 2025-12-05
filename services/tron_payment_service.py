@@ -63,10 +63,8 @@ class TronUSDTService:
             status='pending',
             wallet_address=self.merchant_address,
             expires_at=datetime.utcnow() + timedelta(hours=1),
-            metadata={
-                'amount_sun': int(amount * (10 ** self.decimals)),
-                'description': description
-            }
+            payment_metadata='{"description": "'
+                             + description + '", "created_at": "' + datetime.utcnow().isoformat() + '"}'
         )
         session.add(subscription)
         session.commit()

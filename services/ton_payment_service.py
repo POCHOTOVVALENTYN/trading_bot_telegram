@@ -60,10 +60,8 @@ class TONPaymentService:
             status='pending',
             wallet_address=self.merchant_address,
             expires_at=datetime.utcnow() + timedelta(hours=1),
-            metadata={
-                'description': description,
-                'created_at': datetime.utcnow().isoformat()
-            }
+            payment_metadata='{"description": "'
+                             + description + '", "created_at": "' + datetime.utcnow().isoformat() + '"}'
         )
         session.add(subscription)
         session.commit()
