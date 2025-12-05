@@ -161,16 +161,37 @@ class TronUSDTService:
         """
 
         try:
-            # Проверяем статус транзакции
+            # 1. Проверяем, что контракт вызван успешно
             if tx.get("ret", [{}])[0].get("contractRet") != "SUCCESS":
                 return False
 
-            # Проверяем входящую сумму
-            # TODO: Полная реализация требует парсинга контрактных данных
+            raw_data = tx.get("raw_data", {}).get("contract", [{}])[0]
+            parameter = raw_data.get("parameter", {}).get("value", {})
 
-            return True
+            # 2. Проверяем, что это вызов USDT контракта
+            contract_address = parameter.get("contract_address")
+            # Конвертируем адрес из hex если нужно, или сравниваем с конфигом
+            # (TronGrid возвращает адреса в разном формате, часто Base58Check)
 
-        except:
+            # 3. Декодируем данные (input data)
+            # В поле 'data' лежит вызов функции transfer(to, amount)
+            # Это сложная часть без web3 библиотек.
+
+            # УПРОЩЕННОЕ РЕШЕНИЕ ДЛЯ TRONPY (если она установлена):
+            # Если вы используете self.tron.get_transaction(tx_hash),
+            # библиотека может сама распарсить поля.
+
+            # Если вы используете HTTP API вручную, вам нужно проверить:
+            # - Функция: a9059cbb (transfer)
+            # - Сумма: последние 64 символа hex строки data -> перевести в int
+
+            # ВРЕМЕННОЕ РЕШЕНИЕ (на основе суммы перевода TRX, если это не токен):
+            # Внимание: для USDT TRC20 этот метод _обязан_ парсить data.
+            # Если вы не можете реализовать парсинг data сейчас, бот не сможет надежно проверять USDT.
+
+            return False  # Пока возвращаем False, чтобы не подтверждать все подряд.
+
+        except Exception:
             return False
 
     def confirm_payment(self, payment_id: str, days: int = 30) -> bool:

@@ -49,17 +49,17 @@ async def handle_nowpayments_confirm(update: Update, context: ContextTypes.DEFAU
 
     payment_id = query.data.split('_')[-1]
 
-    # В реальности нужно проверить через API
-    # Для теста просто активируем
-    nowpayments_service.confirm_payment(payment_id, days=30)
+    #1. Спрашиваем сервис о статусе платежа
+    status_data = nowpayments_service.get_payment_status(payment_id)
 
-    success_text = """
-✅ **ПЛАТЕЖ ПОЛУЧЕН!**
-
-Ваша подписка активирована на 30 дней.
-
-Спасибо! 🎉
-    """
+    if status_data.get("status") == "finished":  # Или 'confirmed' в зависимости от API
+        nowpayments_service.confirm_payment(payment_id, days=30)
+        success_text = """✅ **ПЛАТЕЖ ПОЛУЧЕН!**
+                        Ваша подписка активирована на 30 дней. Спасибо! 🎉"""
+    else:
+        await query.edit_message_text(
+            f"❌ Платеж еще не подтвержден.\nСтатус: {status_data.get('status')}\nПопробуйте через минуту."
+        )
 
     buttons = [
         [InlineKeyboardButton("🤖 AI-чат", callback_data="ai_chat")],

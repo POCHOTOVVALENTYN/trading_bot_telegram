@@ -125,7 +125,13 @@ class TONPaymentService:
             return {"success": False, "status": "not_found"}
 
         start_time = datetime.utcnow()
-
+        # Получаем комментарий, который мы ожидаем увидеть в транзакции
+        # Формат комментария был задан в create_invoice: "Subscribe_{tariff}"?
+        # В handle_ton_payment вы передали comment=f"Subscribe_{tariff}" в ссылку,
+        # но для проверки нужно точно знать, что искать.
+        # Лучше искать по уникальному ID платежа, если бы вы просили пользователя его указать.
+        # Но так как вы просите указать tariff, будем искать входящую транзакцию с нужной суммой.
+        expected_nanotons = int(expected_amount * 1e6)
         while True:
             elapsed = (datetime.utcnow() - start_time).total_seconds()
             if elapsed > timeout:
@@ -136,29 +142,44 @@ class TONPaymentService:
                 }
 
             try:
-                # Получаем информацию об адресе
+                # Используем метод getTransactions (последние транзакции)
+                url = f"{self.ton_rpc}/getTransactions"
+                params = {
+                    "address": self.merchant_address,
+                    "limit": 10,  # Проверяем последние 10 транзакций
+                    "archival": "true"
+                }
                 headers = {"X-API-Key": self.api_key}
-                url = f"{self.ton_rpc}/getAddressInformation"
-                params = {"address": self.merchant_address}
 
                 response = requests.get(url, params=params, headers=headers, timeout=10)
 
                 if response.status_code == 200:
                     data = response.json()
                     if data.get("ok"):
-                        # Проверяем баланс или транзакции
-                        # В реальности нужно парсить транзакции
-                        return {
-                            "success": True,
-                            "status": "checking",
-                            "message": "Проверяю блокчейн..."
-                        }
+                        transactions = data.get("result", [])
+                        for tx in transactions:
+                            # Проверяем входящие сообщения (in_msg)
+                            in_msg = tx.get("in_msg", {})
 
+                            # Проверяем value (сумма)
+                            value = int(in_msg.get("value", 0))
+
+                            # Важно: проверить время транзакции (utime), чтобы не засчитать старые
+                            tx_time = tx.get("utime", 0)
+                            if tx_time < subscription.created_at.timestamp():
+                                continue
+
+                            # Если сумма совпадает (с небольшой погрешностью или точно)
+                            if value == expected_nanotons:
+                                return {
+                                    "success": True,
+                                    "status": "completed",
+                                    "message": "Платеж найден!"
+                                }
             except Exception as e:
                 print(f"TON check error: {e}")
 
-            # Проверяем каждые 10 секунд
-            await asyncio.sleep(10)
+            await asyncio.sleep(10)  # Пауза перед следующей проверкой
 
     def confirm_payment(self, payment_id: str, days: int = 30) -> bool:
         """

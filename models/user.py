@@ -17,12 +17,3 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
-class Subscription(Base):
-    __tablename__ = 'subscriptions'
-
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer)
-    payment_id = Column(String)
-    amount = Column(Integer)
-    status = Column(String)  # 'pending', 'completed', 'failed'
-    created_at = Column(DateTime, default=datetime.utcnow)
